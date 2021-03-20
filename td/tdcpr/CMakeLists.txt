@@ -90,9 +90,9 @@ add_library(tdcpr STATIC ${TDCPR_SOURCE})
 target_include_directories(tdcpr PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(tdcpr PUBLIC tdutils)
 
-# set(CURL_LIBRARY "-lcurl")
-# include_directories(/usr/bin/curl)
+set(CURL_LIBRARY "-lcurl")
 find_package(CURL REQUIRED)
+include_directories(/usr/bin/curl)
 # include_directories(${CURL_INCLUDE_DIR})
 target_link_libraries(tdcpr PUBLIC CURL::libcurl) # todo should be private, but first dependencys in ssl_options need to be removed
 
