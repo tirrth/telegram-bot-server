@@ -19,6 +19,7 @@ set(TD_TEST_SOURCE
 
   ${TDUTILS_TEST_SOURCE}
   ${TDACTOR_TEST_SOURCE}
+  # ${TDCPR_TEST_SOURCE}
 )
 set(TD_TEST_SOURCE ${TD_TEST_SOURCE} PARENT_SCOPE)
 
@@ -59,12 +60,13 @@ if (NOT CMAKE_CROSSCOMPILING OR EMSCRIPTEN)
   target_include_directories(test-tdutils PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
   target_link_libraries(test-tdutils PRIVATE tdutils)
   target_link_libraries(run_all_tests PRIVATE tdcore tdclient)
-  target_link_libraries(test-online PRIVATE tdcore tdclient tdutils tdactor)
+  target_link_libraries(test-online PRIVATE tdcore tdclient tdutils)
+  # tdactor
 
   if (CLANG)
-#    add_executable(fuzz_url fuzz_url.cpp)
-#    target_link_libraries(fuzz_url PRIVATE tdcore)
-#    target_compile_options(fuzz_url PRIVATE "-fsanitize-coverage=trace-pc-guard")
+  #    add_executable(fuzz_url fuzz_url.cpp)
+  #    target_link_libraries(fuzz_url PRIVATE tdcore)
+  #    target_compile_options(fuzz_url PRIVATE "-fsanitize-coverage=trace-pc-guard")
   endif()
 
   add_test(run_all_tests run_all_tests)

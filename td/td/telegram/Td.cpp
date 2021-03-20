@@ -6448,6 +6448,7 @@ void Td::on_request(uint64 id, const td_api::downloadFile &request) {
     }
     info->request_ids.clear();
   }
+
   if (request.synchronous_) {
     if (info == nullptr) {
       info = &pending_file_downloads_[file_id];
@@ -6456,7 +6457,7 @@ void Td::on_request(uint64 id, const td_api::downloadFile &request) {
     info->limit = limit;
     info->request_ids.push_back(id);
   }
-  file_manager_->download(file_id, download_file_callback_, priority, offset, limit);
+  file_manager_->download(file_id, download_file_callback_, priority, offset, limit); // Further code can be seen in FileManage.cpp file (line :: 2122)
   if (!request.synchronous_) {
     send_closure(actor_id(this), &Td::send_result, id, file_manager_->get_file_object(file_id, false));
   }

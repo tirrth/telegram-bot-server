@@ -34,6 +34,9 @@
 
 #include <cstdlib>
 
+#include "td/cpr/cpr.h"
+#include <iostream>
+
 namespace telegram_bot_api {
 
 using td::Jsonable;
@@ -42,6 +45,12 @@ using td::JsonValue;
 
 using td_api::make_object;
 using td_api::move_object_as;
+
+using cpr::Post;
+using cpr::Response;
+using cpr::Url;
+using cpr::Multipart;
+using cpr::File;
 
 void Client::fail_query_with_error(PromisedQueryPtr query, int32 error_code, Slice error_message,
                                    Slice default_message) {
@@ -255,6 +264,7 @@ bool Client::init_methods() {
   methods_.emplace("deletewebhook", &Client::process_set_webhook_query);
   methods_.emplace("getwebhookinfo", &Client::process_get_webhook_info_query);
   methods_.emplace("getfile", &Client::process_get_file_query);
+  // methods_.emplace("downloadfile", &Client::process_download_file_query);
   return true;
 }
 
@@ -262,6 +272,61 @@ class Client::JsonFile : public Jsonable {
  public:
   JsonFile(const td_api::file *file, const Client *client) : file_(file), client_(client) {
   }
+
+  // static inline int count=0;
+  // static void OnBegin( const happyhttp::Response* r, void* userdata )
+  // {
+  //   printf( "BEGIN (%d %s)\n", r->getstatus(), r->getreason() );
+  //   count = 0;
+  // }
+
+  // static void OnData( const happyhttp::Response* r, void* userdata, const unsigned char* data, int n )
+  // {
+  //   fwrite( data, 1, n, stdout );
+  //   count += n;
+  // }
+
+  // static void OnComplete( const happyhttp::Response* r, void* userdata )
+  // {
+  //   printf( "COMPLETE (%d bytes)\n", count );
+  // }
+
+  // void Test2() const
+  // {
+  //   // file->remote_->id_
+  //   // file->remote_->unique_id_
+  //   // file->local_->path_
+  //   // file->size_
+  //   puts("-----------------Test2------------------------" );
+
+  //   const char* headers[] =
+  //   {
+  //     "Connection", "close",
+  //     "Content-type", "application/x-www-form-urlencoded",
+  //     "Accept", "text/plain",
+  //     0
+  //   };
+
+  //   const char* body = "answer=42&name=Bubba";
+
+  //   happyhttp::Connection conn( "127.0.0.1", 3000 );
+  //   conn.setcallbacks( OnBegin, OnData, OnComplete, 0 );
+  //   // conn.putrequest( "POST", "/downloadPost" );
+  //   conn.request( "POST", "/downloadPost", headers, (const unsigned char*)body, strlen(body) );
+
+  //   // conn.putheader( "Connection", "close" );
+  //   // conn.putheader( "Content-Length", l);
+  //   // conn.putheader( "Content-type", "multipart/form-data" );
+  //   // conn.putheader("Content-Disposition","name=downloadPost; filename=test.txt");
+  //   // conn.putheader( "Accept", "text/plain" );
+  //   // conn.endheaders();
+
+  //   while(conn.outstanding())
+  //   {
+  //     conn.pump();
+  //   }
+  // }
+
   void store(JsonValueScope *scope) const {
     auto object = scope->enter_object();
     client_->json_store_file(object, file_, true);
@@ -3941,6 +4006,18 @@ td_api::object_ptr<td_api::Object> Client::execute(object_ptr<td_api::Function> 
   return td::ClientActor::execute(std::move(f));
 }
 
+void Client::on_file_send_to_different_server(const td::string file_path) {
+  const td::string file_redirection_api = [](auto x) -> std::string {
+    if (x) {
+      return x;
+    }
+    return std::string();
+  }(std::getenv("FILE_REDIRECTION_API"));
+  Response r = Post(Url{file_redirection_api}, Multipart{{"file_path", file_path}, {"file", File{file_path}}});
+  // "http://localhost:3000/downloadPost"
+  std::cout << r.text << std::endl;
+}
+
 void Client::on_update_file(object_ptr<td_api::file> file) {
   auto file_id = file->id_;
   if (!is_file_being_downloaded(file_id)) {
@@ -3954,6 +4031,22 @@ void Client::on_update_file(object_ptr<td_api::file> file) {
     return on_file_download(file_id, Status::Error(400, "Bad Request: file is too big"));
   }
   if (file->local_->is_downloading_completed_) {
+    // Sends the file to different server
+    const td::string is_file_redirection_allowed = [](auto x) -> std::string {
+      if (x) {
+        return x;
+      }
+      return std::string();
+    }(std::getenv("IS_FILE_REDIRECTION_ALLOWED"));
+    const td::string file_redirection_api = [](auto x) -> std::string {
+      if (x) {
+        return x;
+      }
+      return std::string();
+    }(std::getenv("FILE_REDIRECTION_API"));
+    if (is_file_redirection_allowed == "true" && !file_redirection_api.empty()) {
+      on_file_send_to_different_server(file->local_->path_);
+    }
     return on_file_download(file_id, std::move(file));
   }
   if (!file->local_->is_downloading_active_ && download_started_file_ids_.count(file_id)) {
@@ -7526,6 +7619,37 @@ td::Status Client::process_get_file_query(PromisedQueryPtr &query) {
   return Status::OK();
 }
 
+// // td::Status Client::process_download_file_query(PromisedQueryPtr &query) {
+// // td::string file_local_path = query->arg("file_local_path").str();
+// // td::string file_id = query->arg("file_id").str();
+// // check_remote_file_id(file_id, std::move(query), [this](object_ptr<td_api::file> file, PromisedQueryPtr query) {
+// //   do_get_file(std::move(file), std::move(query));
+// // });
+// // return Status::OK();
+
+// // td::HttpHeaderCreator hc;
+// // hc.init_status_line(200);
+// // hc.set_keep_alive();
+// // hc.set_content_type("application/json");
+// // // if (retry_after > 0) {
+// // //   hc.add_header("Retry-After", PSLICE() << retry_after);
+// // // }
+// // // hc.set_content_size(content.size());
+
+// // auto r_header = hc.finish();
+// // LOG(DEBUG) << "Response headers: " << r_header.ok();
+// // if (r_header.is_error()) {
+// //   LOG(ERROR) << "Bad response headers";
+// //   send_closure(std::move(connection_), &td::HttpInboundConnection::write_error, r_header.move_as_error());
+// //   return;
+// // }
+// // LOG(DEBUG) << "Send result: " << content;
+
+// // send_closure(connection_, &td::HttpInboundConnection::write_next_noflush, td::BufferSlice(r_header.ok()));
+// // send_closure(connection_, &td::HttpInboundConnection::write_next_noflush, std::move(content));
+// // send_closure(std::move(connection_), &td::HttpInboundConnection::write_ok);
+// // }
+
 void Client::do_get_file(object_ptr<td_api::file> file, PromisedQueryPtr query) {
   if (!parameters_->local_mode_ &&
       td::max(file->expected_size_, file->local_->downloaded_size_) > MAX_DOWNLOAD_FILE_SIZE) {  // speculative check
@@ -7545,7 +7669,8 @@ void Client::do_get_file(object_ptr<td_api::file> file, PromisedQueryPtr query) 
   }
 
   send_request(make_object<td_api::downloadFile>(file_id, 1, 0, 0, false),
-               std::make_unique<TdOnDownloadFileCallback>(this, file_id));
+               std::make_unique<TdOnDownloadFileCallback>(
+                   this, file_id));  // Further code can be seen in Td.cpp file (line :: 6421)
 }
 
 bool Client::is_file_being_downloaded(int32 file_id) const {
@@ -7565,8 +7690,7 @@ void Client::on_file_download(int32 file_id, td::Result<object_ptr<td_api::file>
       const auto &error = r_file.error();
       fail_query_with_error(std::move(query), error.code(), error.public_message());
     } else {
-      answer_query(JsonFile(r_file, std::move(query));
-      // answer_query(JsonFile(r_file.ok().get(), this), std::move(query));
+      answer_query(JsonFile(r_file.ok().get(), this), std::move(query));
     }
   }
 }

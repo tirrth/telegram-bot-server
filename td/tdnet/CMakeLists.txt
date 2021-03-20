@@ -52,7 +52,7 @@ set(TDNET_SOURCE
 add_library(tdnet STATIC ${TDNET_SOURCE})
 target_include_directories(tdnet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_include_directories(tdnet SYSTEM PRIVATE $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>)
-target_link_libraries(tdnet PUBLIC tdutils tdactor)
+target_link_libraries(tdnet PUBLIC tdutils tdactor tdcpr)
 if (NOT EMSCRIPTEN)
   target_link_libraries(tdnet PRIVATE ${OPENSSL_SSL_LIBRARY})
 endif()

@@ -57,7 +57,8 @@ void FileLoadManager::download(QueryId id, const FullRemoteFileLocation &remote_
   DcId dc_id = remote_location.is_web() ? G()->get_webfile_dc_id() : remote_location.get_dc_id();
   auto &resource_manager = get_download_resource_manager(is_small, dc_id);
   send_closure(resource_manager, &ResourceManager::register_worker,
-               ActorShared<FileLoaderActor>(node->loader_.get(), static_cast<uint64>(-1)), priority);
+               ActorShared<FileLoaderActor>(node->loader_.get(), static_cast<uint64>(-1)),
+               priority);  // Further code can be seen in ResourceManager.cpp (line :: 21)
   query_id_to_node_id_[id] = node_id;
 }
 

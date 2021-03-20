@@ -47,7 +47,7 @@ set(TDDB_SOURCE
 
 add_library(tddb STATIC ${TDDB_SOURCE})
 target_include_directories(tddb PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-target_link_libraries(tddb PUBLIC tdactor tdutils PRIVATE tdsqlite)
+target_link_libraries(tddb PUBLIC tdactor tdcpr tdutils PRIVATE tdsqlite)
 
 if (NOT CMAKE_CROSSCOMPILING)
   add_executable(binlog_dump td/db/binlog/binlog_dump.cpp)

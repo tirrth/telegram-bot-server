@@ -182,6 +182,8 @@ endif()
 
 add_subdirectory(tdactor)
 
+add_subdirectory(tdcpr)
+
 add_subdirectory(tdnet)
 
 add_subdirectory(sqlite)
@@ -701,7 +703,7 @@ endif()
 add_library(tdcore STATIC ${TDLIB_SOURCE})
 target_include_directories(tdcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<BUILD_INTERFACE:${TL_TD_AUTO_INCLUDE_DIR}>)
 target_include_directories(tdcore SYSTEM PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(tdcore PUBLIC tdapi tdactor tdutils tdnet tddb PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${CMAKE_DL_LIBS} ${ZLIB_LIBRARIES})
+target_link_libraries(tdcore PUBLIC tdapi tdactor tdcpr tdutils tdnet tddb PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${CMAKE_DL_LIBS} ${ZLIB_LIBRARIES})
 if (WIN32)
   if (MINGW)
     target_link_libraries(tdcore PRIVATE ws2_32 mswsock crypt32)
@@ -800,6 +802,7 @@ if (EMSCRIPTEN)
   add_executable(${TD_EMSCRIPTEN} ${TD_EMSCRIPTEN_SRC})
   target_include_directories(${TD_EMSCRIPTEN} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
   target_link_libraries(${TD_EMSCRIPTEN} PRIVATE tdjson_static tdactor)
+  # tdcpr
 endif()
 
 #EXECUTABLES
@@ -861,6 +864,7 @@ include(GeneratePkgConfig)
 
 generate_pkgconfig(tdutils "Telegram Library - Utils")
 generate_pkgconfig(tdactor "Telegram Library - Actor")
+generate_pkgconfig(tdcpr "Externally added Library - CPR")
 generate_pkgconfig(tdnet "Telegram Library - Net")
 generate_pkgconfig(tdsqlite "Telegram Library - SQLite")
 generate_pkgconfig(tddb "Telegram Library - Database")

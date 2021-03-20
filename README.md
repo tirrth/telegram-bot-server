@@ -24,7 +24,7 @@ If you do that, you'll only need to choose the target operating system to receiv
 In general, you need to install all `Telegram Bot API server` [dependencies](#dependencies) and compile the source code using CMake:
 
 ```
-git clone https://github.com/tirrth/telegram-bot-api.git
+git clone --recursive https://github.com/tdlib/telegram-bot-api.git
 cd telegram-bot-api
 mkdir build
 cd build
@@ -96,3 +96,4 @@ and continue sending requests to the new server as usual.
 <a name="license"></a>
 ## License
 `Telegram Bot API server` source code is licensed under the terms of the Boost Software License. See [LICENSE_1_0.txt](http://www.boost.org/LICENSE_1_0.txt) for more information.
+# telegram-bot-server

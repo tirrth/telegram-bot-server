@@ -28,7 +28,7 @@ void ResourceManager::register_worker(ActorShared<FileLoaderActor> callback, int
   node->callback_ = std::move(callback);
 
   add_node(node_id, priority);
-  send_closure(node->callback_, &FileLoaderActor::set_resource_manager, actor_shared(this, node_id));
+  send_closure(node->callback_, &FileLoaderActor::set_resource_manager, actor_shared(this, node_id)); // Further code can be seen in FileLoader.cpp (line :: 25)
 }
 
 void ResourceManager::update_priority(int8 priority) {

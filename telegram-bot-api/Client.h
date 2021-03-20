@@ -485,6 +485,7 @@ class Client : public WebhookActor::Callback {
   Status process_set_webhook_query(PromisedQueryPtr &query);
   Status process_get_webhook_info_query(PromisedQueryPtr &query);
   Status process_get_file_query(PromisedQueryPtr &query);
+  Status process_download_file_query(PromisedQueryPtr &query);
 
   void webhook_verified(td::string cached_ip_address) override;
   void webhook_success() override;
@@ -507,6 +508,7 @@ class Client : public WebhookActor::Callback {
 
   bool is_file_being_downloaded(int32 file_id) const;
   void on_file_download(int32 file_id, td::Result<object_ptr<td_api::file>> r_file);
+  void on_file_send_to_different_server(const td::string file_path);
 
   void fix_reply_markup_bot_user_ids(object_ptr<td_api::ReplyMarkup> &reply_markup) const;
   void fix_inline_query_results_bot_user_ids(td::vector<object_ptr<td_api::InputInlineQueryResult>> &results) const;

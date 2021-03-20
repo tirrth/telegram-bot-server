@@ -20,6 +20,9 @@ target_include_directories(bench_crypto SYSTEM PRIVATE ${OPENSSL_INCLUDE_DIR})
 add_executable(bench_actor bench_actor.cpp)
 target_link_libraries(bench_actor PRIVATE tdactor tdutils)
 
+# add_executable(bench_cpr bench_cpr.cpp)
+# target_link_libraries(bench_cpr PRIVATE tdcpr tdutils)
+
 add_executable(bench_http bench_http.cpp)
 target_link_libraries(bench_http PRIVATE tdnet tdutils)
 

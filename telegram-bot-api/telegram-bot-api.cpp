@@ -53,6 +53,7 @@
 #include <cstdlib>
 #include <memory>
 #include <tuple>
+#include <regex>
 
 namespace telegram_bot_api {
 
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]) {
   td::int64 log_max_file_size = 2000000000;
   td::string working_directory;
   td::string temporary_directory;
+  td::string redirect_files;
   td::string username;
   td::string groupname;
   td::uint64 max_connections = 0;
@@ -169,11 +171,27 @@ int main(int argc, char *argv[]) {
     return std::string();
   }(std::getenv("TELEGRAM_API_HASH"));
 
-  options.set_usage(td::Slice(argv[0]), "--api-id=<arg> --api-hash=<arg> [--local] [OPTION]...");
+  parameters->is_file_redirection_allowed_ = [](auto x) -> std::string {
+    if (x) {
+      return x;
+    }
+    return std::string();
+  }(std::getenv("IS_FILE_REDIRECTION_ALLOWED"));
+  parameters->file_redirection_api_ = [](auto x) -> std::string {
+    if (x) {
+      return x;
+    }
+    return std::string();
+  }(std::getenv("FILE_REDIRECTION_API"));
+
+  options.set_usage(td::Slice(argv[0]),
+                    "--api-id=<arg> --api-hash=<arg> --is-file-redirection-allowed=<bool> "
+                    "--api-file-redirection=<endpoint> [--local] [OPTION]...");
   options.set_description("Telegram Bot API server");
   options.add_option('h', "help", "display this help text and exit", [&] { need_print_usage = true; });
   options.add_option('\0', "local", "allow the Bot API server to serve local requests",
                      [&] { parameters->local_mode_ = true; });
+
   options.add_checked_option(
       '\0', "api-id",
       "application identifier for Telegram API access, which can be obtained at https://my.telegram.org (defaults to "
@@ -183,6 +201,17 @@ int main(int argc, char *argv[]) {
                      "application identifier hash for Telegram API access, which can be obtained at "
                      "https://my.telegram.org (defaults to the value of the TELEGRAM_API_HASH environment variable)",
                      td::OptionParser::parse_string(parameters->api_hash_));
+
+  options.add_option(
+      '\0', "is-file-redirection-allowed",
+      "allow the Bot API server to redirect files to different server, which can be obtained at "
+      "https://my.telegram.org (defaults to the value of the IS_FILE_REDIRECTION_ALLOWED environment variable)",
+      td::OptionParser::parse_string(parameters->is_file_redirection_allowed_));
+  options.add_option('\0', "file-redirection-api",
+                     "redirect files to given file redirection api, which can be obtained at "
+                     "https://my.telegram.org (defaults to the value of the FILE_REDIRECTION_API environment variable)",
+                     td::OptionParser::parse_string(parameters->file_redirection_api_));
+
   options.add_checked_option('p', "http-port", PSLICE() << "HTTP listening port (default is " << http_port << ")",
                              td::OptionParser::parse_integer(http_port));
   options.add_checked_option('s', "http-stat-port", "HTTP statistics port",
@@ -190,6 +219,11 @@ int main(int argc, char *argv[]) {
   options.add_option('d', "dir", "server working directory", td::OptionParser::parse_string(working_directory));
   options.add_option('t', "temp-dir", "directory for storing HTTP server temporary files",
                      td::OptionParser::parse_string(temporary_directory));
+
+  // options.add_option('r', "is-file-redirection-allowed",
+  //                    "allow the Bot API server to redirect files to different server",
+  //                    td::OptionParser::parse_string_to_bool(redirect_files));
+
   options.add_checked_option('\0', "filter",
                              "\"<remainder>/<modulo>\". Allow only bots with 'bot_user_id % modulo == remainder'",
                              [&](td::Slice rem_mod) {
@@ -254,6 +288,23 @@ int main(int argc, char *argv[]) {
   options.add_check([&] {
     if (parameters->api_id_ <= 0 || parameters->api_hash_.empty()) {
       return td::Status::Error("You must provide valid api-id and api-hash obtained at https://my.telegram.org");
+    }
+    return td::Status::OK();
+  });
+  options.add_check([&] {
+    if (parameters->is_file_redirection_allowed_ == "true") {
+      if (parameters->file_redirection_api_.empty()) {
+        return td::Status::Error(
+            "api-file-redirection key must not be empty if is-file-redirection-allowed key is set to true");
+      } else {
+        using namespace std;
+        const regex pattern(
+            "((http|https)://)(www.)?[a-zA-Z0-9@:%._\\+~#?&//=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%._\\+~#?&//"
+            "=]*)");
+        if (!regex_match(parameters->file_redirection_api_, pattern)) {
+          return td::Status::Error("api-file-redirection key is invalid url");
+        }
+      }
     }
     return td::Status::OK();
   });
